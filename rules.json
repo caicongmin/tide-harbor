@@ -211,7 +211,12 @@
   "commentRelay": {
     "protocol": "harbor-comment-relay/1",
     "channel": "作者明确指定的视频接力根楼内回复",
-    "entryUrl": null,
+    "entryUrl": "https://www.bilibili.com/video/BV1oWHK6iEBt/?comment_on=1&comment_root_id=321738611536",
+    "videoId": "BV1oWHK6iEBt",
+    "rootReplyId": "321738611536",
+    "authorMid": 66770939,
+    "visibilityConfirmed": false,
+    "availabilityNotice": "本期视频已公开，作者已置顶这条根评并回读两棒完整成果；但根评曾被平台标记隐藏，尚未证明外部可见。先确认你能读到完整原评再接传；读不到就先游玩/保存，不另开楼或重复贴码。",
     "automaticPosting": false,
     "steps": [
       "对照视频作者在简介/置顶等可控位置公布的接力根楼，核实视频作者和根楼位置，不信陌生留言单方声称“已获允许”。在该楼选一份完整成果，记录视频/根评/上一条评论的实际位置。没有具体入口时只生成草稿，不虚构评论链接或去无关视频投放。",
