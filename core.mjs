@@ -173,7 +173,7 @@ const Tide = (() => {
   }
   function observe(s){return {name:s.name,day:s.day,roundLabel:s.day===1?'夜航这一晚':`自由修整第${s.day-1}轮`,mode:s.day===1?'one-evening':'rearrange',turn:s.turn,turnsUntilNight:s.phase==='night'?0:Math.max(0,LIMIT-s.turn),phase:s.phase,stock:clone(s.stock),scene:scene(s),
     completion:s.phase==='night'?'这一晚已收尾，可以带走。自由修整只重摆已有材料，不刷新资源/来客/剧情。':'一次夜航短篇，不是每日养成；每12次动工自动预览夜色，也可以提前收工。',
-    rules:{board:'坐标x/y均0—6；陆地为x=0..2或4..6，y=1..5；码头(0,3)留空。桥口(3,2)/(3,4)。',clock:'建造/采集各推进1步，第12步预览夜色；观察/预览/命名/回收/换色不推进。夜色中仅观察、命名、换色和带走；改布局/回收先回自由修整。没有现实倒计时。后续为同一小港自由修整，无每日新内容；兼容字段day统计布置轮次。',
+    rules:{board:'坐标x/y均0—6；陆地为x=0..2或4..6，y=1..5；码头(0,3)留空。桥口(3,2)/(3,4)。',clock:'建造/采集各推进1步，第12步预览夜色；观察/预览/命名/回收/换色/留便笺不推进。夜色中可观察、命名、留便笺、换色、保存与分享；改布局/回收先回自由修整。没有现实倒计时。后续为同一小港自由修整，无每日新内容；兼容字段day统计布置轮次。',
       goal:'试一个摆法、留一处地方，或回应一份成果。访客不必迎齐，也不必为了风格标签刷动作；来访邀请可以不接受。没有排行榜。',types:clone(TYPES)},
     buildings:clone(s.buildings),caches:s.caches.map(c=>({...clone(c),reachable:!!route(s,c.at).length})),
     guests:guests(s),gifts:[...s.gifts],availableStyles:Object.keys(PALETTES).filter(k=>!['moss','rose'].includes(k)||s.gifts.includes('gardener')).concat(s.gifts.includes('ferry')?['star']:[]),
