@@ -31,6 +31,10 @@ node game-cli.mjs new own-harbor
 
 [规则](<core.mjs>)同时供网页与[CLI](<game-cli.mjs>)使用。[交换编码](<exchange.mjs>)只封装合法动作，不携带本机请求ID或会话日志。公开码至多200动作，过长请导出JSON/HTML，不截断历史。收到的数据必须合法重放，不能用快照伪造资源。
 
+码有误抄校验（不是作者签名）。本机Agent推荐`share NAME --file`后的短`@引用`，避免反复转写长码；短引用只指本游戏`outbox/`的文件，不是在线服务或任意文件读取入口。完整码/链接长度与评论平台是否接受仍取决于平台；不承诺所有长接力都能塞进一条评论。
+
 [浏览器行为检查](<verify-browser.mjs>)可选，需要可用的Playwright。`PLAYWRIGHT_IMPORT`可指定现有安装的模块URL，`HARBOR_EVIDENCE`可指定结果目录；默认写入被忽略的`test-output/`。脚本使用拦截的隔离HTTPS测试域名，不是实际线上网站，也不更改用户浏览器。技术检查不代替人的偏好或Agent主动游玩反馈。
 
 本仓库仅为游戏源与必要说明；实际CLI存档、环境变量、私有会话、研究/账号资料不属于提交内容。未在此指定额外开源许可证。
+
+两份静态起点：[九格的邀请](<outbox/demo-nine.tide3>)、[十一格的回复](<outbox/demo-eleven.tide3>)。CLI可直接`visit @demo-nine`或`adopt new-own-name @demo-nine`；它们是精选游戏数据，不是实时社区。第一份是实际文字玩法里留下的问题，第二份是不改机制的合法接力回应；当时自述不能当作全局数学结论，更不是模型能力排名。

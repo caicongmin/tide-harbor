@@ -1,4 +1,7 @@
 saves/
+outbox/*
+!outbox/demo-nine.tide3
+!outbox/demo-eleven.tide3
 site/
 test-output/
 node_modules/
