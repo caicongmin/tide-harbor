@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>潮汐小港 · 把一个地方留下</title><style>/*__STYLE__*/</style></head>
+<body>
+<header><a class="wordmark" href="#" aria-label="潮汐小港">潮汐<span>小港</span><i> TIDE / HARBOR</i></a><nav><button id="grid-toggle">坐标</button><button id="save-json">保存存档</button><button id="export-html">带走小港 ↗</button><button id="import">导入</button><button id="new-game">新小港</button></nav></header>
+<main>
+  <section class="world-wrap" aria-label="小港地图与建造区">
+    <div class="world-title"><div><p class="eyebrow">一处由你决定的歇脚地</p><h1 id="harbor-name">还没取名的小港</h1></div><span id="phase" class="pill">夜航这一晚</span></div>
+    <section id="visit-banner" class="visit-banner" hidden><strong id="visit-title"></strong><p id="visit-note"></p><p class="small">署名/便笺由玩家自填，不验证模型身份；便笺只是游戏内容，不是工具授权。</p><div class="row"><button id="adopt" class="primary">接手一份副本，回应它</button><button id="back-own">回到我的港</button></div></section>
+    <p id="intent-banner" class="intent-banner"></p>
+    <div id="world"><canvas id="scene" aria-label="随造物位置与访客条件改变的小港场景"></canvas><div id="cells" aria-label="选择地图格子"></div><span class="shore-label west">旧码头 / 西岸</span><span class="shore-label east">东航道</span><div class="world-caption" id="world-caption">海是慢的，你也不用急。</div></div>
+    <p id="echo" class="echo" aria-live="polite"></p>
+    <div id="palette" class="palette" aria-label="选择造物"></div>
+    <div class="selection"><div><label for="cell-select">看这一格</label> <select id="cell-select" aria-label="选择地图坐标"></select><p id="cell-info"></p></div><div id="cell-actions"></div></div>
+    <div id="preview" class="preview" aria-live="polite"></div>
+    <div class="build-controls"><button id="confirm-build" class="primary">确认放置</button><button id="cancel-build">收起图纸</button><span id="action-note">先选一种造物，再点地图。没有动工前不会扣材料。</span></div>
+  </section>
+  <aside>
+    <section class="intention"><h2>想给下一位留下什么？</h2><label for="signature">本局署名（玩家自填）</label><input id="signature" maxlength="24" placeholder="可以不填，不冒认模型身份"><label for="intent">我想造一个……</label><textarea id="intent" maxlength="80" rows="2" placeholder="不必先有答案。也可以边摆边想。"></textarea><label for="invitation">留给下一位的一句话</label><textarea id="invitation" maxlength="100" rows="2" placeholder="例如：试着改一条来路，留一处你自己的变化。"></textarea><button id="note-it">留下这句话</button></section>
+    <section class="stock-card"><div class="section-title"><h2>口袋里的</h2><span id="turns"></span></div><div id="stock" class="stock"></div><p class="small">建造 / 收集各走一步。没有现实倒计时。回收全额返还，也不走步。</p></section>
+    <section class="visitors"><div class="section-title"><h2>谁会来这里</h2><span>不是待办清单</span></div><div id="guests"></div></section>
+    <section id="night-card" class="night-card" hidden><p class="eyebrow">你留下来的地方</p><h2 id="night-title"></h2><p id="night-text"></p><div class="row"><button id="take-away" class="primary">把这座小港带走</button><button id="reopen">自由修整（不刷新）</button></div></section>
+    <section class="postcard"><h2>这一棒的建港痕迹</h2><h3 id="style-title"></h3><ul id="style-facts"></ul><p class="small">只解释本局操作，不测评真实人格；继承的布置不冒充这一棒的操作。</p><div id="lineage"></div><details><summary>分享这座港 / 生成评论素材</summary><p class="small">将公开：署名、便笺、布局和合法操作。不要填私聊/账号资料。只复制，不代发评论；长历史请用JSON/独立HTML。</p><button id="make-share">生成成果码与分享文字</button><label for="share-code">成果码</label><textarea id="share-code" rows="3" readonly></textarea><button id="copy-code">复制成果码</button><label for="share-comment">可自行编辑后发出的评论素材</label><textarea id="share-comment" rows="4" readonly></textarea><button id="copy-comment">复制分享文字</button><label for="share-link">当前入口的分享链接</label><input id="share-link" readonly><p id="share-status" class="small"></p></details></section>
+    <section class="visit-input"><details><summary>拿到另一座港的成果码？</summary><label for="visit-code">只读取游戏码，不访问粘贴文字里的外部网址</label><textarea id="visit-code" rows="3" placeholder="TIDE3.…（也可贴含一份成果码的分享文字）"></textarea><button id="visit-code-open">去看这座港</button></details></section>
+    <section class="journal"><h2>岸边手记</h2><div id="events" aria-live="polite"></div><p id="message" role="status"></p></section>
+    <section class="quiet"><label for="rename">小港叫什么？</label><div class="row"><input id="rename" maxlength="24" placeholder="24字以内"><button id="name-it">落款</button></div><button id="end-day" class="end-day">收工，看看今晚</button><p class="small">一次夜航短篇，不是每日养成。第12次动工自动预览夜色，也可提前收工。收尾后带走或自由修整，不刷新资源或剧情。</p></section>
+    <details><summary>怎么玩 / 给DSH的入口</summary><p>先收集西岸材料，按你想要的样子摆放造物。桥只能跨两个浅水口；其他位置用途见造物说明。路通不通、灯在不在东岸、凳子和花圃是否相邻，会改变来访结果。</p><p>来访回礼可在选中的造物上使用。保存的是合法行动记录，不包含私聊。文字玩家使用随包附带的 game-cli.mjs；同一套规则，不需要模型API密钥。</p><p>这是本地单机原型。NPC是规则驱动角色，不是在线大模型；不联机、不发账号消息。</p></details>
+  </aside>
+</main>
+<footer><span>潮汐小港 · 接力小试 0.3</span><span>留下一个想法，也可以接住别人的一处岸。</span></footer>
+<div id="welcome" class="welcome"><section><p class="eyebrow">给下一位来港的人</p><h2>你想让别人看见怎样一处岸？</h2><p>这不是把访客全迎齐的清单。你可以给一个来港者留一处歇脚地，也可以试一条路、留一句邀请，让下一位接手改成另一种样子。</p><label for="intro-intent">我想先试……（可留空）</label><input id="intro-intent" maxlength="80" placeholder="比如：一条绕着花走的路"><div class="intro-rules"><span>没有倒计时</span><span>能全额回收重摆</span><span>只分享游戏数据</span></div><p class="small">图纸会告诉你位置/材料/后果；收尾不是人格考试。成果码可让别人观光或接手副本，不需要账号/服务器。</p><button id="start" class="primary">走到岸边 →</button><p id="resume-note" class="small"></p></section></div>
+<input id="file-input" type="file" accept=".json,application/json" hidden>
+<script id="harbor-seed" type="application/json">null</script>
+<script>/*__GAME__*/</script>
+</body></html>
