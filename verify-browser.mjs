@@ -37,6 +37,7 @@ try{
   await p.locator('.postcard summary').click();await p.locator('#make-share').click();
   const code=await p.locator('#share-code').inputValue(),link=await p.locator('#share-link').inputValue(),comment=await p.locator('#share-comment').inputValue();
   assert.deepEqual(Tide.save(Exchange.decode(code)),original);assert.equal(Exchange.extract(comment),code);assert.equal(new URL(link).origin,'https://harbor.test');
+  const relay=await p.evaluate(()=>window.harbor.share().relay);assert.equal(relay.text,comment);assert.equal(relay.workId,originalObs.workId);assert.equal(relay.parentId,null);assert.equal(relay.targetConfigured,false);assert(await p.locator('#copy-comment').isEnabled());assert.match(await p.locator('#share-status').textContent(),/本地预算，非平台官方上限/);
   await fs.writeFile(path.join(out,'main-share.json'),JSON.stringify({code,comment,codeLength:code.length,linkLength:link.length,notice:'Test URL is an intercepted isolated origin, NOT a live deployment.'},null,2));
   checks.push('Actual share controls produce matching legal replay, comment material and data-bearing HTTPS link');
   const next=await context(),q=await next.newPage();await q.goto(link);await ready(q);assert.equal((await obs(q)).access,'visit');assert.deepEqual(await state(q),original);assert(await q.locator('#end-day').isDisabled());assert(await q.locator('#signature').isDisabled());
@@ -45,6 +46,7 @@ try{
   await q.locator('#adopt').click();assert.equal((await obs(q)).access,'own');assert.equal((await obs(q)).signature,'');assert.equal((await obs(q)).lineage[0].signature,'大肥鱼');assert.deepEqual((await obs(q)).stock,originalObs.stock);
   await note(q,'接力试摆者','把歇脚处换到另一侧','留下一条你愿意走的路。');await cell(q,2,2);await q.locator('#recycle-selected').click();await build(q,'bench',1,1);await q.locator('#end-day').click();
   const child=await state(q),childObs=await obs(q);assert(childObs.buildings.some(b=>b.type==='bench'&&b.x===1&&b.y===1));assert.equal(childObs.guests.find(g=>g.id==='gardener').arrived,true);assert.match(childObs.style.title,/歇脚处/);assert(!childObs.style.facts.some(f=>f.tag==='夜色里的改色'));
+  const reply=await q.evaluate(()=>window.harbor.share().relay);assert.equal(reply.parentId,originalObs.workId);assert.match(reply.summary,/长凳\(1,1\)/);assert(!reply.summary.includes('小屋'));assert.deepEqual(Tide.save(Exchange.decode(Exchange.extract(reply.text))),child);
   checks.push('Recipient explicitly adopts, gets no fresh resources, leaves new signature and moves rest stop; inherited night paints are not credited to new player');
   await q.reload();await ready(q);assert.equal((await obs(q)).access,'own');assert.deepEqual(await state(q),child);assert.equal(await q.locator('[data-cell]').count(),49);
   checks.push('Owned handoff URL reload restores exact child and 49 controls');

@@ -93,7 +93,7 @@
     state=next;viewing=false;noteDirty=false;persist();const u=new URL(location.href);u.hash=new URLSearchParams({harbor:receivedCode,mode:'own'}).toString();history.replaceState(null,'',u);render();$('message').textContent='现在修改的是你的副本。请重新落款；原作与上一位便笺仍在来历中。';
   }catch(e){$('message').textContent='未覆盖任何作品：'+e.message;}};
   $('back-own').onclick=()=>{const u=new URL(featured?.home||location.href,location.href);u.hash='';location.href=u.href;};
-  $('make-share').onclick=()=>{try{$('share-code').value=Exchange.encode(state);$('share-comment').value=Exchange.comment(state);let link=Exchange.link(state,location.href);const fixed=featured?.code===$('share-code').value&&!!link;if(fixed){const u=new URL(link);u.hash='';link=u.href;}$('share-link').value=link||'';$('share-status').textContent=!link?'当前是离线文件，不分享本机路径。请复制成果码；有公开网页后再生成链接。':fixed?'这是发布时的固定样例页；接手改动不会自动上墙，请为新版本生成自己的成果码。':'分享前请检查署名与便笺，确认对方可访问这个网页；素材不会自动发出。';}catch(e){$('share-status').textContent='尚未生成：'+e.message;}};
+  $('make-share').onclick=()=>{try{const relay=Exchange.relay(state);$('share-code').value=Exchange.encode(state);$('share-comment').value=relay.text;let link=Exchange.link(state,location.href);const fixed=featured?.code===$('share-code').value&&!!link;if(fixed){const u=new URL(link);u.hash='';link=u.href;}$('share-link').value=link||'';const entry=!link?'离线文件不分享本机路径。':fixed?'这是发布时的固定样例；新改动不会自动上墙。':'素材不会自动发出。';$('share-status').textContent=`${relay.characters}/${relay.maxChars}字（本地预算，非平台官方上限）。${relay.notice} 当前尚未配置视频/根楼。${entry}`;}catch(e){for(const id of ['share-code','share-comment','share-link'])$(id).value='';$('share-status').textContent='尚未生成：'+e.message;}};
   async function copy(id){const text=$(id).value;if(!text){$('message').textContent='请先生成成果素材。';return;}try{await navigator.clipboard.writeText(text);$('message').textContent='已复制；由你决定是否发布，不会自动发评论。';}catch{$(id).focus();$(id).select();$('message').textContent='浏览器未允许自动复制，已选中文本，请手动复制。';}}
   $('copy-code').onclick=()=>copy('share-code');$('copy-comment').onclick=()=>copy('share-comment');
   $('visit-code-open').onclick=()=>{try{const code=Exchange.extract($('visit-code').value);Exchange.decode(code);const u=new URL(location.href);u.hash=new URLSearchParams({harbor:code}).toString();location.href=u.href;}catch(e){$('message').textContent='未离开当前小港：'+e.message;}};
@@ -155,7 +155,7 @@
     if(gridStamp!==w+'x'+h){document.querySelectorAll('[data-cell]').forEach(b=>{const[x,y]=b.dataset.cell.split(',').map(Number),p=pos(x,y,7);Object.assign(b.style,{left:(p[0]-tw/2)+'px',top:(p[1]-th/2)+'px',width:tw+'px',height:th+'px'});});gridStamp=w+'x'+h;}
     frame++;window.__tideReady=true;
   }
-  window.harbor={observe:()=>({...Tide.observe(state),access:viewing?'visit':'own'}),preview:a=>Tide.explain(state,a),act:a=>act(a),exportSave:()=>Tide.save(state),share:()=>({code:Exchange.encode(state),card:Exchange.card(state),comment:Exchange.comment(state)})};
+  window.harbor={observe:()=>({...Tide.observe(state),access:viewing?'visit':'own'}),preview:a=>Tide.explain(state,a),act:a=>act(a),exportSave:()=>Tide.save(state),share:()=>({code:Exchange.encode(state),card:Exchange.card(state),comment:Exchange.comment(state),relay:Exchange.relay(state)})};
   render();if(embedded||receivedCode!==null){started=true;$('welcome').hidden=true;}if(entryError)$('message').textContent=entryError;
   function animate(t){draw(t);requestAnimationFrame(animate);}requestAnimationFrame(animate);
 })();
