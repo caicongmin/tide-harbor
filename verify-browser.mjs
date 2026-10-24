@@ -10,9 +10,10 @@ import Exchange from './exchange.mjs';
 const {chromium}=await import(process.env.PLAYWRIGHT_IMPORT||'playwright');
 const here=path.dirname(fileURLToPath(import.meta.url)),out=path.resolve(process.env.HARBOR_EVIDENCE||path.join(here,'test-output'));
 await fs.mkdir(out,{recursive:true});const html=await fs.readFile(path.join(here,'index.html'),'utf8');
+const publicPages={};for(const name of ['nine','eleven'])publicPages['/'+name+'.html']=await fs.readFile(path.join(here,'site',name+'.html'),'utf8');
 const sourceSha256=crypto.createHash('sha256').update(html).digest('hex');
 const browser=await chromium.launch({headless:true}),checks=[],errors=[],external=[];
-async function context(options={}){const c=await browser.newContext(options);await c.route('**/*',r=>{const u=r.request().url();if(u.startsWith('https://harbor.test/'))return r.fulfill({status:200,contentType:'text/html; charset=utf-8',body:html});if(/^(file:|blob:|data:)/.test(u))return r.continue();external.push(u);return r.abort();});c.on('page',p=>{p.on('pageerror',e=>errors.push(String(e)));p.on('console',m=>{if(m.type()==='error')errors.push(m.text());});});return c;}
+async function context(options={}){const c=await browser.newContext(options);await c.route('**/*',r=>{const u=r.request().url();if(u.startsWith('https://harbor.test/'))return r.fulfill({status:200,contentType:'text/html; charset=utf-8',body:publicPages[new URL(u).pathname]||html});if(/^(file:|blob:|data:)/.test(u))return r.continue();external.push(u);return r.abort();});c.on('page',p=>{p.on('pageerror',e=>errors.push(String(e)));p.on('console',m=>{if(m.type()==='error')errors.push(m.text());});});return c;}
 async function ready(p){await p.waitForFunction(()=>window.__tideReady===true);}
 const state=p=>p.evaluate(()=>window.harbor.exportSave());
 const obs=p=>p.evaluate(()=>window.harbor.observe());
@@ -64,6 +65,13 @@ try{
   checks.push('Untrusted signatures/notes survive as literal text, do not inject HTML or fetch external resources');
   const mobile=await context({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),m=await mobile.newPage();await m.goto(link);await ready(m);await m.locator('#adopt').tap();await m.reload();await ready(m);assert.equal((await obs(m)).access,'own');assert.equal(await m.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await m.screenshot({path:path.join(out,'03-mobile.png'),fullPage:true});
   checks.push('390x844 touch adoption and reload work without horizontal overflow (emulation, not hardware)');
+  const featuredContext=await context(),v=await featuredContext.newPage();await v.goto('https://harbor.test/');await ready(v);assert.equal(await v.locator('#static-visits a').count(),2);await v.locator('#start').click();await v.locator('#rename').fill('短页之前已有的港');await v.locator('#name-it').click();const ownBeforeVisit=await state(v);
+  await v.goto('https://harbor.test/eleven.html');await ready(v);assert.equal((await obs(v)).access,'visit');assert.equal((await obs(v)).guests[0].route.length,11);await v.locator('.postcard summary').click();await v.locator('#make-share').click();assert.equal(await v.locator('#share-link').inputValue(),'https://harbor.test/eleven.html');
+  checks.push('Static short invitation URL really opens readonly 11-cell harbor and shares the same short fixed URL');
+  await v.locator('#adopt').click();await note(v,'短页接手者','保留这段来路','由下一位自己选。');const featuredChild=await state(v);await v.reload();await ready(v);assert.deepEqual(await state(v),featuredChild);const featuredDownload=v.waitForEvent('download');await v.locator('#export-html').click();const exported=await featuredDownload,featuredBackup=path.join(out,'featured-handoff.html');await exported.saveAs(featuredBackup);const fc=await context(),fp=await fc.newPage();await fp.goto(pathToFileURL(featuredBackup).href);await ready(fp);assert.deepEqual(await state(fp),featuredChild);assert.equal((await obs(fp)).access,'own');
+  checks.push('Adopting a static invitation persists; standalone export opens latest child, not the embedded original visitor');
+  await v.locator('#back-own').click();await v.waitForURL('https://harbor.test/index.html');await ready(v);await v.waitForFunction(()=>window.harbor.observe().name==='短页之前已有的港');assert.deepEqual(await state(v),ownBeforeVisit);
+  checks.push('Returning home from static invitation navigates to main harbor and preserves preexisting own game');
   assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
   await fs.writeFile(path.join(out,'browser-verification.json'),JSON.stringify({passed:true,sourceSha256,checks,errors,external,notice:'Isolated intercepted HTTPS test, not deployed Pages. Main source and receiver handoff use ordinary UI, no state setters. Other-agent/human enjoyment not inferred.'},null,2));console.log(JSON.stringify({passed:true,sourceSha256,checks:checks.length,errors,external},null,2));
 }catch(e){await fs.writeFile(path.join(out,'browser-failure.json'),JSON.stringify({passed:false,sourceSha256,checks,error:String(e.stack||e),errors,external},null,2));throw e;}finally{await browser.close();}

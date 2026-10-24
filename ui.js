@@ -1,8 +1,8 @@
 (() => {
   const $=id=>document.getElementById(id), esc=x=>String(x).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-  let embedded;try{embedded=JSON.parse($('harbor-seed').textContent);}catch{}
+  let embedded,featured;try{embedded=JSON.parse($('harbor-seed').textContent);featured=JSON.parse($('harbor-featured')?.textContent||'null');}catch{}
   const hash=s=>{let h=2166136261;for(const c of s)h=Math.imul(h^c.charCodeAt(0),16777619);return(h>>>0).toString(16);};
-  const params=new URLSearchParams(location.hash.slice(1)),receivedCode=params.get('harbor');
+  const params=new URLSearchParams(location.hash.slice(1)),receivedCode=params.get('harbor')??featured?.code??null;
   let storageKey='tide-harbor-v3'+(embedded?'-backup-'+hash(JSON.stringify(embedded)):'-main'),viewing=false,received=null,entryError='',noteDirty=false;
   let state=Tide.create(),kind=null,cell=[1,4],started=false,frame=0,layout,gridStamp='';
   const arrivals=new Map(),reducedMotion=matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -18,6 +18,7 @@
   const resume=state.history.length>0;
   $('resume-note').textContent=resume?'已经留有一座小港，按按钮继续。':'';
   if(resume)$('start').textContent='回到我的小港 →';
+  let visits=$('static-visits');if(!visits){visits=document.createElement('p');visits.id='static-visits';for(const[href,text]of[['./nine.html','先看九格的邀请'],['./eleven.html','看十一格的回复']]){const a=document.createElement('a');a.href=href;a.textContent=text;visits.append(a,document.createTextNode('　'));}$('start').after(visits);}visits.hidden=!/^https?:$/.test(location.protocol)||!!featured;
   const canvas=$('scene'),ctx=canvas.getContext('2d');
   const glyph={bridge:'╪',lamp:'♧',bench:'⌑',garden:'✿',house:'⌂',chime:'♩'};
   function persist(){try{localStorage.setItem(storageKey,JSON.stringify(Tide.save(state)));}catch{$('message').textContent='浏览器未允许本地保存，请用“保存存档”下载。';}}
@@ -91,8 +92,8 @@
     else{const r=Tide.apply(state,{type:'inherit'});if(!r.ok)throw Error(r.error);next=r.state;}
     state=next;viewing=false;noteDirty=false;persist();const u=new URL(location.href);u.hash=new URLSearchParams({harbor:receivedCode,mode:'own'}).toString();history.replaceState(null,'',u);render();$('message').textContent='现在修改的是你的副本。请重新落款；原作与上一位便笺仍在来历中。';
   }catch(e){$('message').textContent='未覆盖任何作品：'+e.message;}};
-  $('back-own').onclick=()=>{const u=new URL(location.href);u.hash='';location.href=u.href;};
-  $('make-share').onclick=()=>{try{$('share-code').value=Exchange.encode(state);$('share-comment').value=Exchange.comment(state);$('share-link').value=Exchange.link(state,location.href)||'';$('share-status').textContent=$('share-link').value?'分享前请检查署名与便笺，确认对方可访问这个网页；素材不会自动发出。':'当前是离线文件，不分享本机路径。请复制成果码；有公开网页后再生成链接。';}catch(e){$('share-status').textContent='尚未生成：'+e.message;}};
+  $('back-own').onclick=()=>{const u=new URL(featured?.home||location.href,location.href);u.hash='';location.href=u.href;};
+  $('make-share').onclick=()=>{try{$('share-code').value=Exchange.encode(state);$('share-comment').value=Exchange.comment(state);let link=Exchange.link(state,location.href);const fixed=featured?.code===$('share-code').value&&!!link;if(fixed){const u=new URL(link);u.hash='';link=u.href;}$('share-link').value=link||'';$('share-status').textContent=!link?'当前是离线文件，不分享本机路径。请复制成果码；有公开网页后再生成链接。':fixed?'这是发布时的固定样例页；接手改动不会自动上墙，请为新版本生成自己的成果码。':'分享前请检查署名与便笺，确认对方可访问这个网页；素材不会自动发出。';}catch(e){$('share-status').textContent='尚未生成：'+e.message;}};
   async function copy(id){const text=$(id).value;if(!text){$('message').textContent='请先生成成果素材。';return;}try{await navigator.clipboard.writeText(text);$('message').textContent='已复制；由你决定是否发布，不会自动发评论。';}catch{$(id).focus();$(id).select();$('message').textContent='浏览器未允许自动复制，已选中文本，请手动复制。';}}
   $('copy-code').onclick=()=>copy('share-code');$('copy-comment').onclick=()=>copy('share-comment');
   $('visit-code-open').onclick=()=>{try{const code=Exchange.extract($('visit-code').value);Exchange.decode(code);const u=new URL(location.href);u.hash=new URLSearchParams({harbor:code}).toString();location.href=u.href;}catch(e){$('message').textContent='未离开当前小港：'+e.message;}};
@@ -101,7 +102,7 @@
   function download(text,name,type){const url=URL.createObjectURL(new Blob([text],{type}));const a=document.createElement('a');a.href=url;a.download=name;a.click();setTimeout(()=>URL.revokeObjectURL(url),1500);}
   const filename=()=>state.name.replace(/[^\p{L}\p{N}_-]/gu,'_').slice(0,30)||'潮汐小港';
   $('save-json').onclick=()=>download(JSON.stringify(Tide.save(state),null,2),filename()+'.json','application/json');
-  function exportHTML(){const copy=document.documentElement.cloneNode(true);copy.querySelector('#harbor-seed').textContent=JSON.stringify(Tide.save(state)).replaceAll('<','\\u003c');copy.querySelector('#welcome').hidden=true;download('<!doctype html>\n'+copy.outerHTML,filename()+'.html','text/html');$('message').textContent='已带走整座可打开的小港页面，不需要服务器。';}
+  function exportHTML(){const copy=document.documentElement.cloneNode(true);copy.querySelector('#harbor-seed').textContent=JSON.stringify(Tide.save(state)).replaceAll('<','\\u003c');copy.querySelector('#harbor-featured').textContent='null';copy.querySelector('#welcome').hidden=true;download('<!doctype html>\n'+copy.outerHTML,filename()+'.html','text/html');$('message').textContent='已带走整座可打开的小港页面，不需要服务器。';}
   $('export-html').onclick=exportHTML;$('take-away').onclick=exportHTML;
   $('import').onclick=()=>{$('file-input').value='';$('file-input').click();};
   $('file-input').onchange=async e=>{try{if(viewing)throw Error('请先回到自己的港，再导入存档。');const f=e.target.files[0];if(!f)return;if(f.size>500000)throw Error('存档超过500KB。');const next=Tide.fromSave(JSON.parse(await f.text()));if(!confirm('导入将替换此页当前的小港。已经保存好原小港了吗？'))return;state=next;noteDirty=false;kind=null;started=true;$('welcome').hidden=true;persist();render();}catch(e){$('message').textContent='没有改动小港：'+e.message;}};
