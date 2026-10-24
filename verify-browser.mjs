@@ -34,10 +34,12 @@ try{
   assert.deepEqual(originalObs.guests.find(g=>g.id==='gardener').route,[[0,3],[0,2],[1,2],[2,2]]);
   checks.push('Main genuinely builds one-visitor flower-side harbor via DOM clicks; real route bypasses house and night paint changes layout');
   await p.screenshot({path:path.join(out,'01-main-harbor.png'),fullPage:true});await fs.writeFile(path.join(out,'main-save.json'),JSON.stringify(original,null,2));
-  await p.locator('.postcard summary').click();await p.locator('#make-share').click();
+  await p.locator('.postcard summary').click();await p.locator('#relay-message').fill('评论里另留一个想法，不写进小港。');await p.locator('#make-share').click();
+  const beforeCaptionEdit=await p.locator('#share-code').inputValue();await p.locator('#relay-message').fill('你愿意试另一种摆法吗？这句只留在原评论。');assert.equal(await p.locator('#share-comment').inputValue(),'');assert.equal(await p.locator('#share-code').inputValue(),beforeCaptionEdit);await p.locator('#make-share').click();assert.deepEqual(await state(p),original);assert.equal(await p.locator('#share-code').inputValue(),beforeCaptionEdit);
   const code=await p.locator('#share-code').inputValue(),link=await p.locator('#share-link').inputValue(),comment=await p.locator('#share-comment').inputValue();
   assert.deepEqual(Tide.save(Exchange.decode(code)),original);assert.equal(Exchange.extract(comment),code);assert.equal(new URL(link).origin,'https://harbor.test');
   const relay=await p.evaluate(()=>window.harbor.share().relay);assert.equal(relay.text,comment);assert.equal(relay.workId,originalObs.workId);assert.equal(relay.parentId,null);assert.equal(relay.targetConfigured,false);assert(await p.locator('#copy-comment').isEnabled());assert.match(await p.locator('#share-status').textContent(),/本地预算，非平台官方上限/);
+  assert.match(comment,/你愿意试另一种摆法/);assert.equal(relay.messageInSave,false);const apiCaption=await p.evaluate(()=>window.harbor.share({message:'接口附言也不改存档'}));assert.equal(apiCaption.code,code);assert.match(apiCaption.comment,/接口附言也不改存档/);assert.equal(await p.locator('#relay-message').inputValue(),'你愿意试另一种摆法吗？这句只留在原评论。');
   await fs.writeFile(path.join(out,'main-share.json'),JSON.stringify({code,comment,codeLength:code.length,linkLength:link.length,notice:'Test URL is an intercepted isolated origin, NOT a live deployment.'},null,2));
   checks.push('Actual share controls produce matching legal replay, comment material and data-bearing HTTPS link');
   const next=await context(),q=await next.newPage();await q.goto(link);await ready(q);assert.equal((await obs(q)).access,'visit');assert.deepEqual(await state(q),original);assert(await q.locator('#end-day').isDisabled());assert(await q.locator('#signature').isDisabled());
