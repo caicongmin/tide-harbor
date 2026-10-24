@@ -3,12 +3,14 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
+import crypto from 'node:crypto';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import Tide from './core.mjs';
 import Exchange from './exchange.mjs';
 const {chromium}=await import(process.env.PLAYWRIGHT_IMPORT||'playwright');
 const here=path.dirname(fileURLToPath(import.meta.url)),out=path.resolve(process.env.HARBOR_EVIDENCE||path.join(here,'test-output'));
 await fs.mkdir(out,{recursive:true});const html=await fs.readFile(path.join(here,'index.html'),'utf8');
+const sourceSha256=crypto.createHash('sha256').update(html).digest('hex');
 const browser=await chromium.launch({headless:true}),checks=[],errors=[],external=[];
 async function context(options={}){const c=await browser.newContext(options);await c.route('**/*',r=>{const u=r.request().url();if(u.startsWith('https://harbor.test/'))return r.fulfill({status:200,contentType:'text/html; charset=utf-8',body:html});if(/^(file:|blob:|data:)/.test(u))return r.continue();external.push(u);return r.abort();});c.on('page',p=>{p.on('pageerror',e=>errors.push(String(e)));p.on('console',m=>{if(m.type()==='error')errors.push(m.text());});});return c;}
 async function ready(p){await p.waitForFunction(()=>window.__tideReady===true);}
@@ -63,5 +65,5 @@ try{
   const mobile=await context({viewport:{width:390,height:844},isMobile:true,hasTouch:true}),m=await mobile.newPage();await m.goto(link);await ready(m);await m.locator('#adopt').tap();await m.reload();await ready(m);assert.equal((await obs(m)).access,'own');assert.equal(await m.evaluate(()=>document.documentElement.scrollWidth>innerWidth+1),false);await m.screenshot({path:path.join(out,'03-mobile.png'),fullPage:true});
   checks.push('390x844 touch adoption and reload work without horizontal overflow (emulation, not hardware)');
   assert.deepEqual(errors,[]);assert.deepEqual(external,[]);
-  await fs.writeFile(path.join(out,'browser-verification.json'),JSON.stringify({passed:true,checks,errors,external,notice:'Isolated intercepted HTTPS test, not deployed Pages. Main source and receiver handoff use ordinary UI, no state setters. Other-agent/human enjoyment not inferred.'},null,2));console.log(JSON.stringify({passed:true,checks:checks.length,errors,external},null,2));
-}catch(e){await fs.writeFile(path.join(out,'browser-failure.json'),JSON.stringify({passed:false,checks,error:String(e.stack||e),errors,external},null,2));throw e;}finally{await browser.close();}
+  await fs.writeFile(path.join(out,'browser-verification.json'),JSON.stringify({passed:true,sourceSha256,checks,errors,external,notice:'Isolated intercepted HTTPS test, not deployed Pages. Main source and receiver handoff use ordinary UI, no state setters. Other-agent/human enjoyment not inferred.'},null,2));console.log(JSON.stringify({passed:true,sourceSha256,checks:checks.length,errors,external},null,2));
+}catch(e){await fs.writeFile(path.join(out,'browser-failure.json'),JSON.stringify({passed:false,sourceSha256,checks,error:String(e.stack||e),errors,external},null,2));throw e;}finally{await browser.close();}

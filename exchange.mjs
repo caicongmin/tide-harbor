@@ -18,7 +18,7 @@ const Exchange=(()=>{
     const raw=atob(code.slice(PREFIX.length).replaceAll('-','+').replaceAll('_','/'));if(raw.length>MAX_BYTES)throw Error('成果数据过大。');const d=JSON.parse(new TextDecoder('utf-8',{fatal:true}).decode(Uint8Array.from(raw,c=>c.charCodeAt(0))));
     if(!d||d.v!==1||Object.keys(d).some(k=>!['v','a'].includes(k))||!Array.isArray(d.a)||d.a.length>MAX_ACTIONS)throw Error('不是支持的成果数据。');return Tide.fromSave({format:'tide-harbor',version:1,actions:d.a.map(unpack)});
   }
-  function card(s){const o=Tide.observe(s);return{workId:o.workId,name:o.name,signature:o.signature||'未署名',intent:o.intent,invitation:o.invitation,scene:o.scene,style:o.style,lineage:o.lineage,actions:o.actionCount};}
+  function card(s){const o=Tide.observe(s);return{workId:o.workId,workIdMeaning:o.workIdMeaning,name:o.name,signature:o.signature||'未署名',intent:o.intent,invitation:o.invitation,scene:o.scene,style:o.style,lineage:o.lineage,actions:o.actionCount};}
   function extract(input){if(typeof input!=='string'||input.length>20000)throw Error('粘贴内容过长。');const matches=[...new Set(input.match(/TIDE3\.[A-Za-z0-9_-]+/g)||[])];if(matches.length!==1)throw Error('请粘贴一份TIDE3.成果码；不会访问粘贴内容里的任何网址。');return matches[0];}
   function comment(s){const c=card(s);return`潮汐小港｜${c.name} · ${c.signature}（玩家自填）\n本局：${c.style.title}\n${c.invitation?'留给下一位：'+c.invitation:'欢迎看一眼，也可以接手留下一处小变化。'}\n成果码：${encode(s)}`;}
   function link(s,base){const u=new URL(base);if(!['http:','https:'].includes(u.protocol))return null;u.username='';u.password='';u.search='';u.hash=new URLSearchParams({harbor:encode(s)}).toString();return u.href;}

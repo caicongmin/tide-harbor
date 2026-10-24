@@ -3,11 +3,11 @@ const Tide = (() => {
   const SIZE=7, LIMIT=12, DOCK=[0,3];
   const TYPES={
     bridge:{name:'木桥',cost:{wood:3},hint:'只建在水道的(3,2)或(3,4)，连接两座岛。'},
-    lamp:{name:'航灯',cost:{wood:1,glass:1},hint:'东岸x=6的航灯，且能从码头走到，才照得到夜航员。'},
-    bench:{name:'长凳',cost:{wood:2},hint:'与花圃上下左右相邻，并能从码头走到，采种人才会坐下。'},
-    garden:{name:'花圃',cost:{wood:1,seed:1},hint:'让相邻长凳成为采种人的歇脚处。'},
+    lamp:{name:'航灯',cost:{wood:1,glass:1},hint:'东岸x=6的航灯，且能从码头走到，才照得到夜航员。灯下仍可通行。'},
+    bench:{name:'长凳',cost:{wood:2},hint:'与花圃上下左右相邻，并能从码头走到，采种人才会坐下。长凳不挡路。'},
+    garden:{name:'花圃',cost:{wood:1,seed:1},hint:'让相邻长凳成为采种人的歇脚处；访客能穿过花圃，不用它堵路。'},
     house:{name:'小屋',cost:{wood:3,glass:1},hint:'可以留给自己；附近访客会谈起它。屋子占路，访客不会穿屋而过。'},
-    chime:{name:'风铃',cost:{wood:1,glass:1},hint:'铃管轻晃，让附近访客停留久一些，不替代桥、灯或花圃；本版无音频。'}
+    chime:{name:'风铃',cost:{wood:1,glass:1},hint:'铃管轻晃，让附近访客停留久一些；风铃不挡路，不替代桥/灯/花圃，本版无音频。'}
   };
   const PALETTES={cream:{name:'暖米',wall:'#f3d4a2',roof:'#c97564'},blue:{name:'海蓝',wall:'#a5ccd6',roof:'#567d9e'},
     moss:{name:'苔绿',wall:'#b7cb95',roof:'#557d69'},rose:{name:'杏粉',wall:'#f0b8b6',roof:'#a56980'}};
@@ -50,9 +50,13 @@ const Tide = (() => {
         if(garden&&garden.style!=='cream')notes.push(`旁边花圃的花色是${PALETTES[garden.style].name}，与长凳一起留在这处歇脚地。`);
       }
       return {...g,arrived:s.phase==='night'&&g.ready,route:g.ready?route(s,g.target):[],notes,stay:chime?'longer':'brief',
-        greeting:!g.ready?'':g.id==='ferry'?'从海上看见这盏灯，才知道这里愿意留一处岸。':'种子先放在脚边吧。我喜欢花就在手边的地方。'};
+        greeting:!g.ready?'':s.phase==='night'&&Number(!!lamp)+Number(!!bench)===1?(g.id==='ferry'?'今晚只有我在这里靠岸。灯下安静，脚步可以慢一点。':'今晚只有我的脚步。花旁的凳子，就让我慢慢坐吧。'):g.id==='ferry'?'从海上看见这盏灯，才知道这里愿意留一处岸。':'种子先放在脚边吧。我喜欢花就在手边的地方。'};
     });
   }
+  function routeNotes(before,after){return after.flatMap((g,i)=>{
+    const old=before[i];if(g.ready!==old.ready)return [`${g.name}${g.ready?'将能靠岸':'将失去通路/歇脚条件'}`];
+    if(g.ready&&JSON.stringify(g.route)!==JSON.stringify(old.route))return [g.route.length===old.route.length?`${g.name}会换一条同长的来路（${g.route.length}格，仍能到达）`:`${g.name}的来路${old.route.length}→${g.route.length}格，仍能到达`];return [];
+  });}
   function create(){return {version:1,name:'还没取名的小港',day:1,turn:0,phase:'day',stock:{wood:4,glass:2,seed:2},
     buildings:[],caches:[{id:'drift',name:'北岸浮木',at:[0,1],gain:{wood:4},taken:false},
       {id:'glass',name:'南岸海玻璃',at:[2,5],gain:{glass:2},taken:false},
@@ -83,7 +87,7 @@ const Tide = (() => {
     }
     if(!inside(a.at))return {ok:false,error:'at需要两个0—6的整数坐标，例如[1,4]。'};
     const b=at(s,a.at);
-    if(a.type==='recycle')return b?{ok:true,cost:{},turns:0,gain:clone(TYPES[b.type].cost),effect:`收回${TYPES[b.type].name}，全额归还材料；相关访客条件会重新计算。`}:{ok:false,error:'这里没有可回收的造物。'};
+    if(a.type==='recycle'){if(!b)return{ok:false,error:'这里没有可回收的造物。'};const future=clone(s);future.buildings=future.buildings.filter(x=>x!==future.buildings.find(x=>x.x===b.x&&x.y===b.y));const changes=routeNotes(guests(s),guests(future));return{ok:true,cost:{},turns:0,gain:clone(TYPES[b.type].cost),effect:`收回${TYPES[b.type].name}，全额归还材料；相关访客条件会重新计算。${changes.join('；')}`};}
     if(a.type==='paint'){
       if(!b)return {ok:false,error:'这里还没有造物。'};
       if(a.style==='star')return b.type==='lamp'&&s.gifts.includes('ferry')?{ok:true,cost:{},turns:0,effect:'灯罩上添了一颗夜航星芒。它会在夜景亮起；豆灯的来访便笺也会认出这份回礼。'}:{ok:false,error:'夜航员到访回礼后，航灯才可使用star。'};
@@ -99,7 +103,7 @@ const Tide = (() => {
     if(a.kind!=='bridge'&&!route(s,a.at).length)return {ok:false,error:'这里还不与码头连通，先修桥。'};
     const spec=TYPES[a.kind];for(const [k,v]of Object.entries(spec.cost))if(s.stock[k]<v)return {ok:false,error:`材料不够：需要${materials(spec.cost)}；你有${materials(s.stock)}。`,cost:clone(spec.cost)};
     const future=clone(s);future.buildings.push({type:a.kind,x:a.at[0],y:a.at[1],style:'cream'});
-    const before=guests(s),after=guests(future),changes=after.filter((g,i)=>g.ready!==before[i].ready).map(g=>`${g.name}${g.ready?'将能靠岸':'将失去通路/歇脚条件'}`);
+    const before=guests(s),after=guests(future),changes=routeNotes(before,after);
     return {ok:true,cost:clone(spec.cost),turns:1,effect:`在(${a.at})放置${spec.name}。${spec.hint}${changes.length?' 来访变化：'+changes.join('；')+'。':''}`};
   }
   function materials(stock){const names={wood:'木片',glass:'海玻璃',seed:'种子'};return Object.entries(stock).map(([k,v])=>`${names[k]||k}${v}`).join('、');}
@@ -112,23 +116,28 @@ const Tide = (() => {
     const benches=s.buildings.filter(b=>b.type==='bench');if(benches.length)bits.push(benches.map(b=>`${PALETTES[b.style].name}长凳`).join('和')+'留出坐处');
     if(s.buildings.some(b=>b.type==='chime'))bits.push('风铃在岸边轻晃');
     if(houses.length)bits.push(houses.map(b=>`${PALETTES[b.style].name}小屋`).join('和')+'安在岸边');
-    const arrived=guests(s).filter(g=>g.arrived);bits.push(arrived.length?`${arrived.map(g=>g.name).join('与')}沿着你连通的路歇下了`:s.phase==='night'?'今晚先把地方留给自己':'旅人还在等你收起图纸');
+    const allGuests=guests(s),arrived=allGuests.filter(g=>g.arrived);bits.push(arrived.length?`${arrived.map(g=>g.name).join('与')}沿着你连通的路歇下了`:s.phase==='night'?'今晚先把地方留给自己':'旅人还在等你收起图纸');
+    if(s.phase==='night'&&arrived.length===1)bits.push(`${allGuests.find(g=>!g.arrived).name}这晚没有在这里靠岸，岸上只留下一位旅人的脚印`);
     return bits.join('。')+'。';
   }
   function workId(s){let h=2166136261;const text=JSON.stringify(s.history.map(a=>Object.fromEntries(Object.keys(a).filter(k=>k!=='requestId').sort().map(k=>[k,a[k]]))));for(const c of text)h=Math.imul(h^c.charCodeAt(0),16777619);return '港-'+(h>>>0).toString(16).padStart(8,'0');}
   function style(s){
     const leg=s.lineage.at(-1)?.actions||0,moments=s.moments.filter(m=>m.step>leg),facts=[],lost=moments.find(m=>m.kind==='lost'),back=lost&&moments.find(m=>m.kind==='return'&&m.step>lost.step&&m.guest===lost.guest);
-    const colors=moments.filter(m=>m.kind==='color'),late=colors.find(m=>m.night);
+    const colors=moments.filter(m=>m.kind==='color'),late=colors.find(m=>m.night),paths=moments.filter(m=>m.kind==='path'),longer=paths.find(m=>m.to>m.from),withdraw=moments.find(m=>m.kind==='retract'&&m.builtAt>leg);
+    if(paths.length){const m=longer||paths.at(-1);facts.push({tag:longer?'来路真的变长':'换了走法',evidence:m.from===m.to?`动作${m.step}让${m.guest}改走另一条${m.to}格的路。走法变了，距离没变，不是假称加长。`:`动作${m.step}让${m.guest}的来路从${m.from}变成${m.to}格，目的地仍然可达。格数包含起终点，不是身份/能力分数。`});}
+    if(withdraw)facts.push({tag:'试摆又收回',evidence:`动作${withdraw.builtAt}把${withdraw.object}摆在(${withdraw.at})，动作${withdraw.step}又收回。材料回到口袋，试摆仍留在这一棒的记录里；不猜测你的动机。`});
     if(back)facts.push({tag:lost.cause==='route'?'来路试验':'去处试摆',evidence:`动作${lost.step}让${lost.guest}失去去处，动作${back.step}又恢复。看起来像一次试验；是否有意由你自己解释。`});
     if(colors.length)facts.push({tag:late?'夜色里的改色':'配色留下痕迹',evidence:late?`入夜后，你仍给${late.object}换了颜色。不是多领一份资源，而是改了留下来的样子。`:`有${colors.length}次真正改变配色的操作；重复点同色不计。`});
     const resting=guests(s).find(g=>g.ready&&g.stay==='longer');
     if(resting)facts.push({tag:'多留一会儿',evidence:`当前布局中${resting.name}的去处附近有风铃，实际停留节奏会变长；布局可能包含上一棒留下的部分。`});
     if(!facts.length&&s.buildings.length)facts.push({tag:'第一版岸地',evidence:`当前有${s.buildings.length}件造物，${guests(s).filter(g=>g.ready).length}位旅人的条件成立。还不足以推断一种建港风格。`});
-    return {title:back?(lost.cause==='route'?'来路试验派':'歇脚处的试摆'):late?'夜色改绘者':resting?'留一处慢岸':colors.length?'正在调色的港主':s.buildings.length?'一份尚在试摆的岸地':'还没落下第一块木板',facts:facts.slice(0,3),disclaimer:'只描述这一局的行为与布置，不测评模型真实人格；署名/想法由玩家自填，没有模型身份认证。'};
+    return {title:longer?'绕路也能到岸':back?(lost.cause==='route'?'来路试验派':'歇脚处的试摆'):withdraw?'试摆后收回的一棒':paths.length?'换了一条来路':late?'夜色改绘者':resting?'留一处慢岸':colors.length?'正在调色的港主':s.buildings.length?'一份尚在试摆的岸地':'还没落下第一块木板',facts:facts.slice(0,3),disclaimer:'只描述这一局的行为与布置，不测评模型真实人格；署名/想法由玩家自填，没有模型身份认证。'};
   }
   function response(old,s,a){
     const before=guests(old),after=guests(s),step=s.history.length,changes=[];
     for(let i=0;i<after.length;i++)if(before[i].ready!==after[i].ready){const g=after[i],kind=g.ready?'return':'lost',cause=before[i].target&&at(s,before[i].target)&&!route(s,before[i].target).length?'route':'place',text=g.ready?`${g.name}现在有了一处能走到的去处。`:`${g.name}的去处暂时断开；全额回收可以把这次试摆撤回。`;s.moments.push({kind,guest:g.name,step,cause});changes.push(text);}
+    for(let i=0;i<after.length;i++)if(before[i].ready&&after[i].ready&&JSON.stringify(before[i].route)!==JSON.stringify(after[i].route)){const from=before[i].route.length,to=after[i].route.length;s.moments.push({kind:'path',guest:after[i].name,step,from,to});changes.push(...routeNotes([before[i]],[after[i]]));}
+    if(a.type==='recycle'){const builtAt=old.history.findLastIndex(h=>h.type==='build'&&h.at[0]===a.at[0]&&h.at[1]===a.at[1])+1;s.moments.push({kind:'retract',object:TYPES[at(old,a.at).type].name,at:[...a.at],step,builtAt});}
     if(a.type==='paint'&&at(old,a.at)?.style!==a.style){const object=TYPES[at(s,a.at).type].name;s.moments.push({kind:'color',object,step,night:old.phase==='night'});changes.push(`${object}实际换了颜色，这个变化会留在带走的小港里。`);}
     if(a.type==='build'&&a.kind==='bridge')changes.push('两岸不再只是背景：你现在能去东岛，也可以试试另一处桥口。');
     if(a.type==='inherit')changes.push('这不是冒领原作：来历保留，接下来的改变会成为你的这一棒。');
@@ -165,10 +174,10 @@ const Tide = (() => {
   function observe(s){return {name:s.name,day:s.day,roundLabel:s.day===1?'夜航这一晚':`自由修整第${s.day-1}轮`,mode:s.day===1?'one-evening':'rearrange',turn:s.turn,turnsUntilNight:s.phase==='night'?0:Math.max(0,LIMIT-s.turn),phase:s.phase,stock:clone(s.stock),scene:scene(s),
     completion:s.phase==='night'?'这一晚已收尾，可以带走。自由修整只重摆已有材料，不刷新资源/来客/剧情。':'一次夜航短篇，不是每日养成；每12次动工自动预览夜色，也可以提前收工。',
     rules:{board:'坐标x/y均0—6；陆地为x=0..2或4..6，y=1..5；码头(0,3)留空。桥口(3,2)/(3,4)。',clock:'建造/采集各推进1步，第12步预览夜色；观察/预览/命名/回收/换色不推进。夜色中仅观察、命名、换色和带走；改布局/回收先回自由修整。没有现实倒计时。后续为同一小港自由修整，无每日新内容；兼容字段day统计布置轮次。',
-      goal:'试着让至少一位访客靠岸，也可以选择只带走自己的地方。没有排行榜。',types:clone(TYPES)},
+      goal:'试一个摆法、留一处地方，或回应一份成果。访客不必迎齐，也不必为了风格标签刷动作；来访邀请可以不接受。没有排行榜。',types:clone(TYPES)},
     buildings:clone(s.buildings),caches:s.caches.map(c=>({...clone(c),reachable:!!route(s,c.at).length})),
     guests:guests(s),gifts:[...s.gifts],availableStyles:Object.keys(PALETTES).filter(k=>!['moss','rose'].includes(k)||s.gifts.includes('gardener')).concat(s.gifts.includes('ferry')?['star']:[]),
-    signature:s.signature,intent:s.intent,invitation:s.invitation,lineage:clone(s.lineage),workId:workId(s),style:style(s),echo:s.echo,
+    signature:s.signature,intent:s.intent,invitation:s.invitation,lineage:clone(s.lineage),workId:workId(s),workIdMeaning:'当前内容版本的快照号，会随动作变化；不是稳定港ID、玩家ID或身份认证。',style:style(s),echo:s.echo,
     recentEvents:[...s.events],recentActions:clone(s.history.slice(-5)),actionCount:s.history.length};}
   return {SIZE,LIMIT,DOCK,TYPES,PALETTES,create,land,route,guests,explain,apply,save,fromSave,observe,materials,scene,workId,style};
 })();

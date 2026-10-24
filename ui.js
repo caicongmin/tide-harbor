@@ -48,7 +48,7 @@
     $('echo').textContent=obs.echo;
     if(!noteDirty)for(const k of ['signature','intent','invitation'])$(k).value=state[k];
     $('style-title').textContent=obs.style.title;$('style-facts').replaceChildren(...obs.style.facts.map(f=>{const li=document.createElement('li');li.textContent=f.tag+'：'+f.evidence;return li;}));
-    $('lineage').replaceChildren(...state.lineage.map(l=>{const p=document.createElement('p');p.textContent=`承接「${l.name}」 · ${l.signature||'未署名'}（玩家自填） · ${l.id} · 前${l.actions}动作归上一棒；便笺：${l.invitation||'未留'}。`;return p;}));
+    $('lineage').replaceChildren(...state.lineage.map(l=>{const p=document.createElement('p');p.textContent=`承接「${l.name}」 · ${l.signature||'未署名'}（玩家自填） · 来自快照${l.id}；接手时已有${l.actions}条行动（含更早继承）。便笺：${l.invitation||'未留'}。`;return p;}));
     $('phase').textContent=`${state.day===1?'夜航这一晚':'自由修整'} · ${night?'灯火留岸':'布置中'}`;
     $('turns').textContent=night?'已经入夜':`再${12-state.turn}步入夜`;
     $('stock').innerHTML=Object.entries(state.stock).map(([k,v])=>`<div><b>${v}</b><span>${{wood:'木片',glass:'海玻璃',seed:'种子'}[k]}</span></div>`).join('');
