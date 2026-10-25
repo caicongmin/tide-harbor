@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#edf6fa">
+  <meta name="description" content="一台免费的小小抓娃娃机。移动准星，下爪，看抱枕真的被提起、滑落或送进出口。无充值、随机松爪或现实奖品。">
+  <title>抓只大肥鱼 · 小小抓娃娃机</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="application/json" id="agent-contract">{"game":"whale-claw","version":1,"interface":"window.whaleClaw","observe":"observe() returns current public core state; does not mutate","actions":[{"type":"aim","x":"110..570","y":"45..305"},{"type":"drop"}],"reset":"reset() starts a fresh board, not a play decision","timing":"Only act in phase ready. Rendering advances the real core simulation; wait for ready before the next action.","coordinates":"Floor width 620, depth 340, z up; exit (68,290). Aim at each toy's current floor x/y, not its lifted sprite.","rules":"Fixed grip 1.4; no randomness. Toy weight and off-center distance determine grip. Off-center toys may lift then slip, changing position. Observe again before re-aiming. No money, advertisements or real prizes."}</script>
+</head>
+<body>
+  <main class="app">
+    <header class="masthead">
+      <a class="wordmark" href="./" aria-label="抓只大肥鱼首页"><span class="brand-dot">◒</span> 大肥鱼的玩具间 <span class="edition">NO. 01</span></a>
+      <span class="free-label"><i></i> 免费玩具 · 没有投币口</span>
+    </header>
+    <section class="intro">
+      <div><p class="eyebrow">A LITTLE CLAW, A BIG WHALE</p><h1>抓只大肥鱼<span>。</span></h1><p class="subtitle">把喜欢的那一只，稳稳带回家。</p></div>
+      <details class="rules"><summary>怎么玩 / Agent规则 <span>↗</span></summary>
+        <div class="rules-body"><p>点机器地板移动准星，或用方向键微调；点击「下爪」或按空格。运动中等待这一把结束。</p><p>夹力固定，没有暗箱随机松爪。偏心和重量会影响抓稳程度，滑落后娃娃的位置可能改变。地板十字是落爪点，影子是娃娃当前地面位置。</p><p>Agent：调用 <code>window.whaleClaw.observe()</code> 读状态；仅在 <code>phase === 'ready'</code> 时调用 <code>act({type:'aim',x,y})</code>，再 <code>act({type:'drop'})</code>。x范围110—570，y范围45—305。等回到ready后再行动；失手后先重读位置。<code>reset()</code> 重新摆盘，不计作玩家决策。没有内部状态设置接口。</p><p>这是确定性简化模拟，不是专业刚体物理或真实抓机。没有现实货币、广告或实物奖品；可随时离开。</p></div>
+      </details>
+    </section>
+    <section class="play-layout" aria-label="抓娃娃机游戏">
+      <div class="machine-wrap">
+        <div class="machine-topline"><span><i></i> WHALE CATCHER</span><span id="machine-status">准备好了</span></div>
+        <canvas id="game" width="1280" height="920" tabindex="0" aria-label="抓娃娃机。点击地板瞄准，方向键微调，空格下爪。" aria-describedby="canvas-help">你的浏览器需要支持Canvas才能显示抓娃娃机。</canvas>
+        <p class="canvas-help" id="canvas-help"><span class="cross-icon">＋</span> 点地板瞄准 <span class="help-sep">/</span> <kbd>↑</kbd><kbd>↓</kbd><kbd>←</kbd><kbd>→</kbd> 微调 <span class="help-sep">/</span> <kbd>空格</kbd> 下爪</p>
+      </div>
+      <aside class="console">
+        <div class="console-heading"><span class="eyebrow">YOUR LITTLE MISSION</span><span class="number">01—04</span></div>
+        <h2>这一爪，<br>想抓哪一只？</h2>
+        <p class="console-copy">对准影子，再试着往中间一点。<br>失手没关系，娃娃还在这里。</p>
+        <div class="readout"><span class="readout-label">落爪位置 <small>FLOOR</small></span><div><span>X <b id="aim-x">310</b></span><span>Y <b id="aim-y">170</b></span><i class="readout-dot"></i></div></div>
+        <button class="drop-button" id="drop" type="button"><span class="button-claw">♧</span><span id="drop-label">下爪，试试看</span><span class="button-arrow">↓</span></button>
+        <p id="live-message" class="live-message" role="status" aria-live="polite">先点地板，给这一爪选个位置。</p>
+        <div class="collection"><div class="section-label"><span>已经带回家</span><span><b id="caught-count">0</b> / 4</span></div><div class="collection-slots" id="collection" aria-label="已抓到的娃娃"></div></div>
+        <div class="bottom-row"><span>已试 <b id="attempt-count">0</b> 爪</span><button id="reset" class="reset-button" type="button">重新摆一盘 <span>↻</span></button></div>
+        <p class="small-note">同样的夹力，没有随机松爪。<br>每一次抓取，都由实际夹点决定。</p>
+      </aside>
+    </section>
+    <footer><span>小小的爪子，也想抱住大大的快乐。</span><span>本地模拟 / AI美术素材 / 无现实奖品</span></footer>
+    <noscript><p class="load-error">请启用JavaScript以进行实际模拟。规则在上方，无需脚本也可阅读。</p></noscript>
+    <p id="load-error" class="load-error" hidden></p>
+  </main>
+  <script type="module" src="./ui.mjs"></script>
+  <script>setTimeout(()=>{if(!window.whaleClaw){const p=document.getElementById('load-error');p.hidden=false;p.textContent='游戏模块尚未加载。如以file://直接打开，请改用本地HTTP预览或部署后的网页；无需安装框架。';}},3500);</script>
+</body>
+</html>

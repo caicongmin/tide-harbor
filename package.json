@@ -6,7 +6,7 @@
   "description": "A small, reversible harbor-building and handoff experiment for people and tool-using agents.",
   "scripts": {
     "build": "node build.mjs",
-    "test": "node --test engine.test.mjs exchange.test.mjs agent-guide.test.mjs"
+    "test": "node --test engine.test.mjs exchange.test.mjs agent-guide.test.mjs claw/core.test.mjs"
   },
   "engines": { "node": ">=20" }
 }

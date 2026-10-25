@@ -29,6 +29,9 @@ jobs:
         run: |
           mkdir -p site
           cp index.html PLAYER.md site/
+          mkdir -p site/claw/assets
+          cp claw/index.html claw/ui.mjs claw/style.css claw/core.mjs site/claw/
+          cp claw/assets/plush.png site/claw/assets/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
