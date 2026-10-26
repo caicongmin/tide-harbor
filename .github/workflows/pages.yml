@@ -34,6 +34,8 @@ jobs:
           cp claw/assets/plush.png site/claw/assets/
           mkdir -p site/door
           cp door/index.html door/core.mjs door/game.mjs door/PLAYER.md site/door/
+          mkdir -p site/checkpoint
+          cp checkpoint/index.html checkpoint/PLAYER.md site/checkpoint/
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:
